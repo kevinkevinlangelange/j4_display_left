@@ -18,10 +18,20 @@ Secondary display board for the Johnny 4 robot controller. Receives live control
 | Microcontroller | SeeedStudio XIAO ESP32S3 |
 | Display | 3.5" TFT LCD, 480×320, SPI, ILI9488 driver |
 
+## Display power
+
+The ILI9488 module runs on **3.3V**. Connect the display's VCC pin to the XIAO's **3V3 pin**.
+
+The XIAO's onboard regulator (fed from USB or your project's 5V rail) is sufficient — no separate power supply is needed. Total draw for the module is typically **60–100 mA** at full backlight brightness, with the LED backlight being the dominant consumer (~50–90 mA) and the ILI9488 controller chip itself drawing only a few milliamps.
+
+> **Note:** Current draw varies between module revisions. If your specific board has a datasheet or product listing with power specs, those figures take precedence over the estimates above. The backlight can also be PWM-dimmed via the BL pin (D0/GPIO1) to reduce draw if needed.
+
 ## Pin assignments
 
 | XIAO Pin | GPIO | Function |
 |----------|------|----------|
+| 3V3 | — | Display VCC (3.3V power) |
+| GND | — | Display GND, shared with TTGO GND |
 | D0 | GPIO1 | TFT backlight (HIGH = on) |
 | D1 | GPIO2 | TFT RST |
 | D2 | GPIO3 | TFT DC |
@@ -33,7 +43,6 @@ Secondary display board for the Johnny 4 robot controller. Receives live control
 | D8 | GPIO7 | TFT SCLK |
 | D9 | GPIO8 | TFT MISO |
 | D10 | GPIO9 | TFT MOSI |
-| GND | — | Shared ground with TTGO |
 
 ## Wiring to TTGO controller
 
@@ -44,6 +53,20 @@ Secondary display board for the Johnny 4 robot controller. Receives live control
 | D7 (GPIO44) RX | ← | GPIO17 TX |
 | D6 (GPIO43) TX | → | GPIO27 RX |
 | GND | — | GND |
+
+## Wiring to ILI9488 display module
+
+| XIAO | Display pin |
+|------|-------------|
+| 3V3 | VCC |
+| GND | GND |
+| D0 (GPIO1) | LED / BL (backlight) |
+| D1 (GPIO2) | RST |
+| D2 (GPIO3) | DC |
+| D3 (GPIO4) | CS |
+| D8 (GPIO7) | SCK |
+| D9 (GPIO8) | MISO (SDO) |
+| D10 (GPIO9) | MOSI (SDI) |
 
 ## UART packet protocol
 
