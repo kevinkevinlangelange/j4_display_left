@@ -20,11 +20,21 @@ Secondary display board for the Johnny 4 robot controller. Receives live control
 
 ## Display power
 
-The ILI9488 module runs on **3.3V**. Connect the display's VCC pin to the XIAO's **3V3 pin**.
+Specs from the [official product page](https://www.lcdwiki.com/3.5inch_SPI_Module_ILI9488_SKU:MSP3520) (Hosyond MSP3520):
 
-The XIAO's onboard regulator (fed from USB or your project's 5V rail) is sufficient — no separate power supply is needed. Total draw for the module is typically **60–100 mA** at full backlight brightness, with the LED backlight being the dominant consumer (~50–90 mA) and the ILI9488 controller chip itself drawing only a few milliamps.
+| Parameter | Value |
+|-----------|-------|
+| VCC supply range | **3.3V – 5V** (onboard regulator on the module PCB) |
+| Logic IO voltage | **3.3V TTL** (SPI signals from XIAO are directly compatible) |
+| Power consumption | **0.62W** |
+| Current at 3.3V | ~188 mA (0.62W ÷ 3.3V) |
+| Current at 5V | ~124 mA (0.62W ÷ 5V) |
 
-> **Note:** Current draw varies between module revisions. If your specific board has a datasheet or product listing with power specs, those figures take precedence over the estimates above. The backlight can also be PWM-dimmed via the BL pin (D0/GPIO1) to reduce draw if needed.
+**Recommended connection:** VCC → XIAO **3V3 pin**. This is the simplest option since the XIAO's 3.3V regulator can supply enough current for the display (~188 mA) plus the ESP32S3 (~50–100 mA in normal operation without WiFi active), staying well within the regulator's ~700 mA capacity.
+
+Alternatively, connect VCC to the XIAO's **5V pin** (USB VBUS) to reduce the load on the 3.3V regulator and run the backlight slightly brighter — note the 5V pin is only live when the XIAO is powered via USB.
+
+The backlight can be PWM-dimmed via the LED/BL pin (D0/GPIO1) to reduce power draw if needed.
 
 ## Pin assignments
 
