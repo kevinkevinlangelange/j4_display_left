@@ -9,14 +9,14 @@
 //                    a 3.5" ILI9488 480x320 SPI TFT display.
 //
 //
-//      J4_DISPLAY — SeeedStudio XIAO ESP32S3 Pin Connections
+//      J4_DISPLAY - SeeedStudio XIAO ESP32S3 Pin Connections
 //      ------------------------------------------------------------------
 //      D0 / GPIO1   TFT backlight (HIGH = on)
 //      D1 / GPIO2   TFT RST
 //      D2 / GPIO3   TFT DC
 //      D3 / GPIO4   TFT CS
-//      D4 / GPIO5   (free — I2C SDA if needed later)
-//      D5 / GPIO6   (free — I2C SCL if needed later)
+//      D4 / GPIO5   (free - I2C SDA if needed later)
+//      D5 / GPIO6   (free - I2C SCL if needed later)
 //      D6 / GPIO43  LINK TX  →  TTGO GPIO27  (TTGO RX)
 //      D7 / GPIO44  LINK RX  ←  TTGO GPIO17  (TTGO TX)
 //      D8 / GPIO7   TFT SCLK
@@ -60,7 +60,7 @@
 
 
 // -----------------------------------------------------------------------------
-//  UART LINK  —  Serial1 on GPIO43 (TX) / GPIO44 (RX)
+//  UART LINK  -  Serial1 on GPIO43 (TX) / GPIO44 (RX)
 //  Serial (USB CDC) is kept free for debug output via the USB port.
 // -----------------------------------------------------------------------------
 #define LINK_RX    44      // D7 ← receives data from TTGO GPIO17
@@ -75,19 +75,19 @@
 // -----------------------------------------------------------------------------
 typedef struct __attribute__((packed)) {
   uint8_t  magic[2];       // frame sync marker: always 0xAB, 0xCD
-  uint8_t  volume;         // master volume knob         (0–100)
-  uint8_t  eyes;           // eye position/brightness    (0–255)
-  uint8_t  spot;           // spotlight intensity        (0–255)
-  uint8_t  left_arm;       // left arm servo position    (0–255)
-  uint8_t  right_arm;      // right arm servo position   (0–255)
-  uint8_t  neck;           // neck servo position        (0–255)
-  uint8_t  jaw;            // jaw servo position         (0–255)
+  uint8_t  volume;         // master volume knob         (0-100)
+  uint8_t  eyes;           // eye position/brightness    (0-255)
+  uint8_t  spot;           // spotlight intensity        (0-255)
+  uint8_t  left_arm;       // left arm servo position    (0-255)
+  uint8_t  right_arm;      // right arm servo position   (0-255)
+  uint8_t  neck;           // neck servo position        (0-255)
+  uint8_t  jaw;            // jaw servo position         (0-255)
   uint16_t bat1_mv;        // controller battery voltage (millivolts)
-  int16_t  bat2_raw;       // robot battery 2 — raw value forwarded from receiver
-  int16_t  bat3_raw;       // robot battery 3 — raw value forwarded from receiver
+  int16_t  bat2_raw;       // robot battery 2 - raw value forwarded from receiver
+  int16_t  bat3_raw;       // robot battery 3 - raw value forwarded from receiver
   uint8_t  connect_ok;     // ESP-NOW link health: 1 = linked, 0 = error
   char     phrase[32];     // currently selected audio phrase, null-terminated (e.g. "A12")
-  uint8_t  checksum;       // XOR of every byte above — used to detect corrupt packets
+  uint8_t  checksum;       // XOR of every byte above - used to detect corrupt packets
 } disp_pkt_t;
 
 
@@ -95,30 +95,30 @@ typedef struct __attribute__((packed)) {
 //  COLOR PALETTE  (RGB565)
 // -----------------------------------------------------------------------------
 #define C_BG       TFT_BLACK    // background
-#define C_LABEL    0x07FF       // cyan  — pot/battery label text
-#define C_VALUE    TFT_WHITE    // white — live numeric values
-#define C_OK       TFT_GREEN    // green — "LINKED" status, divider lines
-#define C_ERR      TFT_RED      // red   — "NO LINK" status
-#define C_ACCENT   TFT_YELLOW   // yellow — "PLAYING:" label
-#define C_DIM      0x4208       // dark grey — waiting message, divider lines
-#define C_HEADER   0x1082       // very dark blue — header bar background
+#define C_LABEL    0x07FF       // cyan  - pot/battery label text
+#define C_VALUE    TFT_WHITE    // white - live numeric values
+#define C_OK       TFT_GREEN    // green - "LINKED" status, divider lines
+#define C_ERR      TFT_RED      // red   - "NO LINK" status
+#define C_ACCENT   TFT_YELLOW   // yellow - "PLAYING:" label
+#define C_DIM      0x4208       // dark grey - waiting message, divider lines
+#define C_HEADER   0x1082       // very dark blue - header bar background
 
 
 // -----------------------------------------------------------------------------
 //  LAYOUT CONSTANTS  (all pixel positions for 480 × 320 landscape)
 //
 //  Columns:
-//    COL_LABEL_1 / COL_VALUE_1  — left pot-value column
-//    COL_LABEL_2 / COL_VALUE_2  — right "PLAYING" / BAT2 column
-//    COL_LABEL_3 / COL_VALUE_3  — BAT3 column (battery row only)
+//    COL_LABEL_1 / COL_VALUE_1  - left pot-value column
+//    COL_LABEL_2 / COL_VALUE_2  - right "PLAYING" / BAT2 column
+//    COL_LABEL_3 / COL_VALUE_3  - BAT3 column (battery row only)
 //
 //  Rows:
-//    ROW_HEADER   — vertical centre of header text
-//    ROW_DIVIDER  — top green line separating header from data area
-//    ROW_DATA_1   — first pot-value row (VOL)
-//    ROW_STEP     — pixel height of each pot-value row
-//    ROW_DIVIDER2 — bottom green line separating data area from battery row
-//    ROW_BAT      — battery label/value row
+//    ROW_HEADER   - vertical centre of header text
+//    ROW_DIVIDER  - top green line separating header from data area
+//    ROW_DATA_1   - first pot-value row (VOL)
+//    ROW_STEP     - pixel height of each pot-value row
+//    ROW_DIVIDER2 - bottom green line separating data area from battery row
+//    ROW_BAT      - battery label/value row
 // -----------------------------------------------------------------------------
 #define COL_LABEL_1   10
 #define COL_VALUE_1   90
@@ -156,12 +156,12 @@ void drawWaiting();
 //  SETUP
 // -----------------------------------------------------------------------------
 void setup() {
-  Serial.begin(115200);   // USB CDC — use for debug prints; does not affect LINK_RX/TX
+  Serial.begin(115200);   // USB CDC - use for debug prints; does not affect LINK_RX/TX
 
   // UART link to the TTGO controller board
   Serial1.begin(LINK_BAUD, SERIAL_8N1, LINK_RX, LINK_TX);
 
-  // TFT backlight — TFT_eSPI also configures this in tft.init(), but being
+  // TFT backlight - TFT_eSPI also configures this in tft.init(), but being
   // explicit here makes the intent clear if the pin definition ever changes
   pinMode(TFT_BL, OUTPUT);
   digitalWrite(TFT_BL, HIGH);
@@ -222,7 +222,7 @@ bool receivePkt() {
       uint8_t cs = 0;
       for (size_t i = 0; i < sizeof(disp_pkt_t) - 1; i++) cs ^= buf[i];
       if (cs != buf[sizeof(disp_pkt_t) - 1]) {
-        Serial.println("XIAO: checksum error — packet dropped");
+        Serial.println("XIAO: checksum error - packet dropped");
         return false;
       }
 
@@ -243,7 +243,7 @@ bool receivePkt() {
 void drawStaticLayout() {
   tft.fillScreen(C_BG);
 
-  // Header bar — dark blue background with title text
+  // Header bar - dark blue background with title text
   tft.fillRect(0, 0, 480, ROW_DIVIDER - 2, C_HEADER);
   tft.setTextColor(C_OK, C_HEADER);
   tft.drawString("J4 CONTROLLER", COL_LABEL_1, ROW_HEADER, 4);
@@ -251,7 +251,7 @@ void drawStaticLayout() {
   // Green divider line below header
   tft.drawFastHLine(0, ROW_DIVIDER, 480, C_OK);
 
-  // Left column — potentiometer labels (cyan, font 2 ≈ 14px tall)
+  // Left column - potentiometer labels (cyan, font 2 ≈ 14px tall)
   tft.setTextColor(C_LABEL, C_BG);
   tft.drawString("VOL:",    COL_LABEL_1, ROW_DATA_1 + ROW_STEP * 0, 2);
   tft.drawString("EYES:",   COL_LABEL_1, ROW_DATA_1 + ROW_STEP * 1, 2);
@@ -264,7 +264,7 @@ void drawStaticLayout() {
   // Vertical dimmed line separating pot column from phrase area
   tft.drawFastVLine(170, ROW_DIVIDER, ROW_DIVIDER2 - ROW_DIVIDER, C_DIM);
 
-  // Right column — currently playing phrase label (yellow)
+  // Right column - currently playing phrase label (yellow)
   tft.setTextColor(C_ACCENT, C_BG);
   tft.drawString("PLAYING:", COL_LABEL_2, ROW_DATA_1, 2);
 
@@ -298,20 +298,27 @@ void drawWaiting() {
 // -----------------------------------------------------------------------------
 void drawValues(const disp_pkt_t &pkt) {
 
-  // --- Link status (top-right corner of header bar) ---
-  // Green "LINKED" when ESP-NOW is healthy; red "NO LINK" when the TTGO
-  // has lost contact with the robot receiver.
-  tft.fillRect(340, ROW_HEADER - 2, 135, 28, C_HEADER);
-  tft.setTextColor(pkt.connect_ok ? C_OK : C_ERR, C_HEADER);
-  tft.drawString(pkt.connect_ok ? "LINKED" : "NO LINK", 345, ROW_HEADER, 4);
+  // setTextColor(fg, bg) makes TFT_eSPI draw foreground and background pixels
+  // in a single SPI pass - no separate fillRect needed.
+  // setTextPadding(n) extends that background fill to at least n pixels wide,
+  // so a shorter new value (e.g. "9") always erases a longer old value (e.g. "100").
+  // Result: no intermediate black frame, no flicker, and no sprite overhead.
+
+  // --- Link status (top-right of header bar) ---
+  // Redrawn only when the link state actually changes; one-time fillRect flicker
+  // on a rare state change is acceptable.
+  static uint8_t prev_connect_ok = 0xFF;
+  if (pkt.connect_ok != prev_connect_ok) {
+    prev_connect_ok = pkt.connect_ok;
+    tft.fillRect(340, ROW_HEADER - 2, 135, 28, C_HEADER);
+    tft.setTextColor(pkt.connect_ok ? C_OK : C_ERR, C_HEADER);
+    tft.drawString(pkt.connect_ok ? "LINKED" : "NO LINK", 345, ROW_HEADER, 4);
+  }
 
   // --- Potentiometer values (left column) ---
-  // Erase the entire value column in one pass, then redraw all seven numbers.
-  // This is faster than erasing each cell individually.
+  // Padding of 45px covers the widest possible value ("255" or "100") in font 2.
   tft.setTextColor(C_VALUE, C_BG);
-  for (int row = 0; row < 7; row++) {
-    tft.fillRect(COL_VALUE_1, ROW_DATA_1 + ROW_STEP * row, 70, ROW_STEP - 2, C_BG);
-  }
+  tft.setTextPadding(45);
   tft.drawString(String(pkt.volume),    COL_VALUE_1, ROW_DATA_1 + ROW_STEP * 0, 2);
   tft.drawString(String(pkt.eyes),      COL_VALUE_1, ROW_DATA_1 + ROW_STEP * 1, 2);
   tft.drawString(String(pkt.spot),      COL_VALUE_1, ROW_DATA_1 + ROW_STEP * 2, 2);
@@ -320,23 +327,26 @@ void drawValues(const disp_pkt_t &pkt) {
   tft.drawString(String(pkt.neck),      COL_VALUE_1, ROW_DATA_1 + ROW_STEP * 5, 2);
   tft.drawString(String(pkt.jaw),       COL_VALUE_1, ROW_DATA_1 + ROW_STEP * 6, 2);
 
-  // --- Currently playing phrase (right column, row below "PLAYING:" label) ---
-  tft.fillRect(COL_LABEL_2, ROW_DATA_1 + ROW_STEP, 300, ROW_STEP - 2, C_BG);
-  tft.setTextColor(C_VALUE, C_BG);
-  tft.drawString(String(pkt.phrase), COL_LABEL_2, ROW_DATA_1 + ROW_STEP, 2);
+  // --- Currently playing phrase (only redraw when it changes) ---
+  static char prev_phrase[32] = "";
+  if (strncmp(pkt.phrase, prev_phrase, sizeof(prev_phrase)) != 0) {
+    strncpy(prev_phrase, pkt.phrase, sizeof(prev_phrase));
+    tft.setTextPadding(0);
+    tft.fillRect(COL_LABEL_2, ROW_DATA_1 + ROW_STEP, 280, ROW_STEP - 2, C_BG);
+    tft.setTextColor(C_VALUE, C_BG);
+    tft.drawString(String(pkt.phrase), COL_LABEL_2, ROW_DATA_1 + ROW_STEP, 2);
+  }
 
   // --- Battery voltages (bottom row) ---
-  // BAT1 is the controller's own LiPo, stored as millivolts and converted here.
-  // BAT2 / BAT3 are forwarded raw from the robot receiver — units TBD.
-  tft.fillRect(COL_VALUE_1, ROW_BAT, 60, 18, C_BG);
-  tft.fillRect(COL_VALUE_2, ROW_BAT, 60, 18, C_BG);
-  tft.fillRect(COL_VALUE_3, ROW_BAT, 55, 18, C_BG);
-
+  // BAT1 is the controller LiPo converted from millivolts.
+  // BAT2 / BAT3 are raw values forwarded from the robot receiver.
   char bat1_str[10];
   dtostrf(pkt.bat1_mv / 1000.0f, 4, 2, bat1_str);
 
   tft.setTextColor(C_VALUE, C_BG);
+  tft.setTextPadding(60);  // covers up to 5 chars in font 2
   tft.drawString(String(bat1_str) + "V", COL_VALUE_1, ROW_BAT, 2);
   tft.drawString(String(pkt.bat2_raw),   COL_VALUE_2, ROW_BAT, 2);
   tft.drawString(String(pkt.bat3_raw),   COL_VALUE_3, ROW_BAT, 2);
+  tft.setTextPadding(0);
 }
