@@ -25,16 +25,14 @@ Specs from the [official product page](https://www.lcdwiki.com/3.5inch_SPI_Modul
 | Parameter | Value |
 |-----------|-------|
 | VCC supply range | 3.3V to 5V (onboard regulator on the module PCB) |
-| Logic IO voltage | 3.3V TTL (SPI signals from XIAO are directly compatible) |
+| Logic IO voltage | 3.3V TTL |
 | Power consumption | 0.62W |
-| Current at 3.3V | ~188 mA (0.62W / 3.3V) |
-| Current at 5V | ~124 mA (0.62W / 5V) |
+| Current at 3.3V | ~188 mA |
+| Current at 5V | ~124 mA |
 
-**Recommended connection:** VCC to XIAO **3V3 pin**. The XIAO's 3.3V regulator can supply enough current for the display (~188 mA) plus the ESP32S3 (~50-100 mA in normal operation without WiFi active), staying well within the regulator's ~700 mA capacity.
+VCC connects to the XIAO's 3V3 pin. The 3.3V regulator handles the display (~188 mA) plus the ESP32S3 fine -- it's rated ~700 mA so there's plenty of headroom. The 5V pin works too and takes some load off the regulator, but it's only live when USB is connected.
 
-Alternatively, connect VCC to the XIAO's **5V pin** (USB VBUS) to reduce the load on the 3.3V regulator and run the backlight slightly brighter. Note the 5V pin is only live when the XIAO is powered via USB.
-
-The backlight can be PWM-dimmed via the LED/BL pin (D0/GPIO1) to reduce power draw if needed.
+The backlight (D0/GPIO1) supports PWM dimming if you need to cut power draw.
 
 ## Pin assignments
 
