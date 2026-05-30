@@ -9,14 +9,14 @@ Secondary display board for the Johnny 4 robot controller. Receives live control
 - Shows the currently selected audio phrase
 - Shows all three battery voltages
 - Shows ESP-NOW link health (LINKED / NO LINK) between the controller and robot receiver
-- Displays a "Waiting for controller…" message on startup until the first packet arrives
+- Displays a "Waiting for controller..." message on startup until the first packet arrives
 
 ## Hardware
 
 | Component | Details |
 |-----------|---------|
 | Microcontroller | SeeedStudio XIAO ESP32S3 |
-| Display | 3.5" TFT LCD, 480×320, SPI, ILI9488 driver |
+| Display | 3.5" TFT LCD, 480x320, SPI, ILI9488 driver |
 
 ## Display power
 
@@ -24,15 +24,15 @@ Specs from the [official product page](https://www.lcdwiki.com/3.5inch_SPI_Modul
 
 | Parameter | Value |
 |-----------|-------|
-| VCC supply range | **3.3V – 5V** (onboard regulator on the module PCB) |
-| Logic IO voltage | **3.3V TTL** (SPI signals from XIAO are directly compatible) |
-| Power consumption | **0.62W** |
-| Current at 3.3V | ~188 mA (0.62W ÷ 3.3V) |
-| Current at 5V | ~124 mA (0.62W ÷ 5V) |
+| VCC supply range | 3.3V to 5V (onboard regulator on the module PCB) |
+| Logic IO voltage | 3.3V TTL (SPI signals from XIAO are directly compatible) |
+| Power consumption | 0.62W |
+| Current at 3.3V | ~188 mA (0.62W / 3.3V) |
+| Current at 5V | ~124 mA (0.62W / 5V) |
 
-**Recommended connection:** VCC → XIAO **3V3 pin**. This is the simplest option since the XIAO's 3.3V regulator can supply enough current for the display (~188 mA) plus the ESP32S3 (~50–100 mA in normal operation without WiFi active), staying well within the regulator's ~700 mA capacity.
+**Recommended connection:** VCC to XIAO **3V3 pin**. The XIAO's 3.3V regulator can supply enough current for the display (~188 mA) plus the ESP32S3 (~50-100 mA in normal operation without WiFi active), staying well within the regulator's ~700 mA capacity.
 
-Alternatively, connect VCC to the XIAO's **5V pin** (USB VBUS) to reduce the load on the 3.3V regulator and run the backlight slightly brighter — note the 5V pin is only live when the XIAO is powered via USB.
+Alternatively, connect VCC to the XIAO's **5V pin** (USB VBUS) to reduce the load on the 3.3V regulator and run the backlight slightly brighter. Note the 5V pin is only live when the XIAO is powered via USB.
 
 The backlight can be PWM-dimmed via the LED/BL pin (D0/GPIO1) to reduce power draw if needed.
 
@@ -40,29 +40,29 @@ The backlight can be PWM-dimmed via the LED/BL pin (D0/GPIO1) to reduce power dr
 
 | XIAO Pin | GPIO | Function |
 |----------|------|----------|
-| 3V3 | — | Display VCC (3.3V power) |
-| GND | — | Display GND, shared with TTGO GND |
+| 3V3 | n/a | Display VCC (3.3V power) |
+| GND | n/a | Display GND, shared with TTGO GND |
 | D0 | GPIO1 | TFT backlight (HIGH = on) |
 | D1 | GPIO2 | TFT RST |
 | D2 | GPIO3 | TFT DC |
 | D3 | GPIO4 | TFT CS |
 | D4 | GPIO5 | Free (I2C SDA if needed later) |
 | D5 | GPIO6 | Free (I2C SCL if needed later) |
-| D6 | GPIO43 | UART TX → TTGO GPIO27 |
-| D7 | GPIO44 | UART RX ← TTGO GPIO17 |
+| D6 | GPIO43 | UART TX to TTGO GPIO27 |
+| D7 | GPIO44 | UART RX from TTGO GPIO17 |
 | D8 | GPIO7 | TFT SCLK |
 | D9 | GPIO8 | TFT MISO |
 | D10 | GPIO9 | TFT MOSI |
 
 ## Wiring to TTGO controller
 
-3.3V logic on both sides — no level shifter needed.
+3.3V logic on both sides -- no level shifter needed.
 
-| XIAO | | TTGO |
-|------|-|------|
-| D7 (GPIO44) RX | ← | GPIO17 TX |
-| D6 (GPIO43) TX | → | GPIO27 RX |
-| GND | — | GND |
+| XIAO | TTGO |
+|------|------|
+| D7 (GPIO44) RX | GPIO17 TX |
+| D6 (GPIO43) TX | GPIO27 RX |
+| GND | GND |
 
 ## Wiring to ILI9488 display module
 
@@ -84,14 +84,14 @@ The TTGO sends a fixed 49-byte packed binary struct (`disp_pkt_t`) at 25 fps:
 
 | Bytes | Field | Description |
 |-------|-------|-------------|
-| 2 | `magic` | Frame sync header: `0xAB`, `0xCD` |
-| 1 | `volume` | Volume knob (0–100) |
-| 1 | `eyes` | Eye position (0–255) |
-| 1 | `spot` | Spotlight intensity (0–255) |
-| 1 | `left_arm` | Left arm position (0–255) |
-| 1 | `right_arm` | Right arm position (0–255) |
-| 1 | `neck` | Neck position (0–255) |
-| 1 | `jaw` | Jaw position (0–255) |
+| 2 | `magic` | Frame sync header: 0xAB, 0xCD |
+| 1 | `volume` | Volume knob (0-100) |
+| 1 | `eyes` | Eye position (0-255) |
+| 1 | `spot` | Spotlight intensity (0-255) |
+| 1 | `left_arm` | Left arm position (0-255) |
+| 1 | `right_arm` | Right arm position (0-255) |
+| 1 | `neck` | Neck position (0-255) |
+| 1 | `jaw` | Jaw position (0-255) |
 | 2 | `bat1_mv` | Controller battery (millivolts, uint16) |
 | 2 | `bat2_raw` | Robot battery 2 raw value from receiver |
 | 2 | `bat3_raw` | Robot battery 3 raw value from receiver |
@@ -99,7 +99,7 @@ The TTGO sends a fixed 49-byte packed binary struct (`disp_pkt_t`) at 25 fps:
 | 32 | `phrase` | Selected audio phrase, null-terminated |
 | 1 | `checksum` | XOR of all preceding bytes |
 
-The receiver re-syncs on the `0xAB 0xCD` magic header after any glitch. Packets that fail the checksum are silently dropped.
+The receiver re-syncs on the 0xAB 0xCD magic header after any glitch. Packets that fail the checksum are silently dropped.
 
 ## Dependencies
 
@@ -107,9 +107,9 @@ Managed via PlatformIO (`platformio.ini`):
 
 | Library | Version |
 |---------|---------|
-| Bodmer/TFT_eSPI | ^2.5.43 |
+| Bodmer/TFT_eSPI | latest from GitHub |
 
-TFT_eSPI is configured entirely through `build_flags` in `platformio.ini` — no `User_Setup.h` file needed.
+TFT_eSPI is configured entirely through `build_flags` in `platformio.ini` -- no `User_Setup.h` file needed.
 
 ## Building and uploading
 
@@ -128,4 +128,4 @@ If the upload fails, hold the **BOOT** button on the XIAO, tap **RESET**, then r
 
 ## Related projects
 
-- **[j4_controller](https://github.com/kevinkevinlangelange/j4_controller)** — the TTGO T-Display transmitter that sends data to this board
+- **[j4_controller](https://github.com/kevinkevinlangelange/j4_controller)** -- the TTGO T-Display transmitter that sends data to this board
