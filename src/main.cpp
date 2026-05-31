@@ -1,7 +1,7 @@
 //******************************************************************************
 //       file name:  j4_display
 //     v0_1 created:  2026-05-22
-//     last updated:  2026-05-23
+//     last updated:  2026-05-31 -- 1207 CDT
 //           author:  Kevin Lange
 //      description:  Secondary display board for the Johnny 4 controller.
 //                    Receives control data from the TTGO T-Display v1.1 over
@@ -258,8 +258,8 @@ void drawStaticLayout() {
   tft.drawString("SPOT:",   COL_LABEL_1, ROW_DATA_1 + ROW_STEP * 2, 2);
   tft.drawString("L-ARM:",  COL_LABEL_1, ROW_DATA_1 + ROW_STEP * 3, 2);
   tft.drawString("R-ARM:",  COL_LABEL_1, ROW_DATA_1 + ROW_STEP * 4, 2);
-  tft.drawString("NECK:",   COL_LABEL_1, ROW_DATA_1 + ROW_STEP * 5, 2);
-  tft.drawString("JAW:",    COL_LABEL_1, ROW_DATA_1 + ROW_STEP * 6, 2);
+  tft.drawString("NK-L:",   COL_LABEL_1, ROW_DATA_1 + ROW_STEP * 5, 2);
+  tft.drawString("NK-R:",   COL_LABEL_1, ROW_DATA_1 + ROW_STEP * 6, 2);
 
   // Vertical dimmed line separating pot column from phrase area
   tft.drawFastVLine(170, ROW_DIVIDER, ROW_DIVIDER2 - ROW_DIVIDER, C_DIM);
