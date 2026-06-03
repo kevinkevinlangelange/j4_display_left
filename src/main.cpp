@@ -2,6 +2,7 @@
 //       file name:  j4_display
 //     v0_1 created:  2026-05-22
 //     last updated:  2026-05-31 -- 1207 CDT
+//     last updated:  2026-06-02 -- 1100 CDT
 //           author:  Kevin Lange
 //      description:  Secondary display board for the Johnny 4 controller.
 //                    Receives control data from the TTGO T-Display v1.1 over
@@ -92,6 +93,35 @@ typedef struct __attribute__((packed)) {
 
 
 // -----------------------------------------------------------------------------
+//  FILE LIST PACKET
+//  Second packet type on the same UART link - magic 0xBE, 0xCD.
+//  Must stay byte-for-byte identical to filelist_pkt_t in j4_controller.
+// -----------------------------------------------------------------------------
+#define MAX_FILES      50
+#define FILE_ID_LEN     2
+#define FILE_NAME_MAX  22
+
+typedef struct __attribute__((packed)) {
+  uint8_t magic[2];        // 0xBE, 0xCD
+  uint8_t total_files;
+  struct {
+    char id[FILE_ID_LEN];
+    char name[FILE_NAME_MAX];
+  } files[MAX_FILES];
+  uint8_t checksum;
+} filelist_pkt_t;
+
+// Banks: index 0 = numeric (IDs 00-09), 1-4 = A-D
+#define NUM_BANKS       5
+#define FILES_PER_BANK 10
+
+struct BankEntry {
+  bool  valid;
+  char  id[FILE_ID_LEN + 1];
+  char  name[FILE_NAME_MAX + 1];
+};
+
+// -----------------------------------------------------------------------------
 //  COLOR PALETTE  (RGB565)
 // -----------------------------------------------------------------------------
 #define C_BG       TFT_BLACK    // background
@@ -135,6 +165,24 @@ typedef struct __attribute__((packed)) {
 
 
 // -----------------------------------------------------------------------------
+//  JUKEBOX LAYOUT CONSTANTS
+// -----------------------------------------------------------------------------
+//  Jukebox panel occupies the right half of the screen (x >= 245).
+//  Left half retains the existing pot-value column.
+//
+//  Bank tab row: y = ROW_DIVIDER..ROW_DIVIDER+22  (one tab per bank)
+//  File list:    10 rows below that, ROW_STEP apart
+//
+#define JB_LEFT         245   // left edge of jukebox panel
+#define JB_TAB_Y        (ROW_DIVIDER + 2)
+#define JB_TAB_H        20
+#define JB_TAB_W        45
+#define JB_LIST_Y       (JB_TAB_Y + JB_TAB_H + 4)
+#define JB_ROW_H        17
+#define JB_ID_X         (JB_LEFT + 4)
+#define JB_NAME_X       (JB_LEFT + 30)
+
+// -----------------------------------------------------------------------------
 //  GLOBALS
 // -----------------------------------------------------------------------------
 TFT_eSPI tft = TFT_eSPI();
@@ -142,14 +190,25 @@ TFT_eSPI tft = TFT_eSPI();
 disp_pkt_t rxPkt;                  // most recently received and verified packet
 bool firstPacketReceived = false;  // used to redraw labels cleanly on first data
 
+// Jukebox
+BankEntry banks[NUM_BANKS][FILES_PER_BANK];
+bool      jukeboxReceived = false;
+uint8_t   activeBank      = 0;     // 0=numeric, 1=A, 2=B, 3=C, 4=D
+char      prevPhrase[33]  = "";
+
 
 // -----------------------------------------------------------------------------
 //  FUNCTION PROTOTYPES
 // -----------------------------------------------------------------------------
 void drawStaticLayout();
+int  readSerial();
 bool receivePkt();
 void drawValues(const disp_pkt_t &pkt);
 void drawWaiting();
+void loadFilelist(const filelist_pkt_t &pkt);
+void drawJukeboxPanel();
+void drawJukeboxTabs();
+void drawJukeboxList();
 
 
 // -----------------------------------------------------------------------------
@@ -181,11 +240,28 @@ void setup() {
 //  Checks for incoming UART packets every iteration. When a valid packet
 //  arrives, update only the value regions of the screen (labels never change).
 // -----------------------------------------------------------------------------
+// Result codes from the unified serial reader
+#define SERIAL_NONE      0
+#define SERIAL_CONTROL   1
+#define SERIAL_FILELIST  2
+
+int readSerial();  // forward declaration - defined after receivePkt()
+
 void loop() {
-  if (receivePkt()) {
+  int result = readSerial();
+
+  if (result == SERIAL_FILELIST) {
+    if (!jukeboxReceived) {
+      jukeboxReceived = true;
+      drawJukeboxPanel();
+    }
+  }
+
+  if (result == SERIAL_CONTROL) {
     if (!firstPacketReceived) {
       firstPacketReceived = true;
-      drawStaticLayout();   // wipe the "Waiting..." message before first draw
+      drawStaticLayout();
+      if (jukeboxReceived) drawJukeboxPanel();
     }
     drawValues(rxPkt);
   }
@@ -193,45 +269,71 @@ void loop() {
 
 
 // -----------------------------------------------------------------------------
-//  receivePkt()
-//  Non-blocking packet parser. Reads whatever bytes Serial1 has available,
-//  accumulates them into a static buffer, and returns true only when a full
-//  49-byte packet has been received AND its checksum matches.
+//  readSerial()
+//  Unified non-blocking parser for both packet types on Serial1.
 //
-//  Re-sync strategy: if byte 0 is not 0xAB or byte 1 is not 0xCD, the buffer
-//  position resets and the parser hunts for the next magic header. This keeps
-//  the display running cleanly if the UART glitches or the TTGO restarts.
+//  State machine:
+//    - Waits for 0xAB or 0xBE as the first magic byte.
+//    - 0xAB -> expects 0xCD next -> control packet (disp_pkt_t)
+//    - 0xBE -> expects 0xCD next -> file list packet (filelist_pkt_t)
+//    - Any mismatch resets to hunting for the next 0xAB / 0xBE.
+//
+//  Returns SERIAL_CONTROL, SERIAL_FILELIST, or SERIAL_NONE.
 // -----------------------------------------------------------------------------
-bool receivePkt() {
-  static uint8_t buf[sizeof(disp_pkt_t)];
-  static size_t  pos = 0;
+int readSerial() {
+  // Max packet size is filelist_pkt_t; control packets fit inside it.
+  static uint8_t buf[sizeof(filelist_pkt_t)];
+  static size_t  pos     = 0;
+  static uint8_t pktType = 0;   // 0=unknown, 1=control, 2=filelist
 
   while (Serial1.available()) {
     uint8_t b = (uint8_t)Serial1.read();
 
-    // Enforce magic header to stay in sync with the transmitter
-    if (pos == 0 && b != 0xAB) continue;
-    if (pos == 1 && b != 0xCD) { pos = 0; continue; }
+    if (pos == 0) {
+      if      (b == 0xAB) { pktType = 1; buf[pos++] = b; }
+      else if (b == 0xBE) { pktType = 2; buf[pos++] = b; }
+      continue;
+    }
+
+    if (pos == 1) {
+      if (b != 0xCD) { pos = 0; pktType = 0; continue; }
+      buf[pos++] = b;
+      continue;
+    }
 
     buf[pos++] = b;
 
-    if (pos == sizeof(disp_pkt_t)) {
-      pos = 0;
+    size_t expected = (pktType == 2) ? sizeof(filelist_pkt_t) : sizeof(disp_pkt_t);
 
-      // XOR all bytes except the last one, compare against stored checksum
+    if (pos == expected) {
+      pos    = 0;
       uint8_t cs = 0;
-      for (size_t i = 0; i < sizeof(disp_pkt_t) - 1; i++) cs ^= buf[i];
-      if (cs != buf[sizeof(disp_pkt_t) - 1]) {
+      for (size_t i = 0; i < expected - 1; i++) cs ^= buf[i];
+
+      if (cs != buf[expected - 1]) {
         Serial.println("XIAO: checksum error - packet dropped");
-        return false;
+        pktType = 0;
+        return SERIAL_NONE;
       }
 
-      memcpy(&rxPkt, buf, sizeof(disp_pkt_t));
-      return true;
+      if (pktType == 1) {
+        memcpy(&rxPkt, buf, sizeof(disp_pkt_t));
+        pktType = 0;
+        return SERIAL_CONTROL;
+      } else {
+        filelist_pkt_t tmp;
+        memcpy(&tmp, buf, sizeof(filelist_pkt_t));
+        loadFilelist(tmp);
+        pktType = 0;
+        return SERIAL_FILELIST;
+      }
     }
   }
-  return false;
+  return SERIAL_NONE;
 }
+
+// Kept as a stub so existing call sites compile without changes.
+bool receivePkt() { return false; }
 
 
 // -----------------------------------------------------------------------------
@@ -261,10 +363,13 @@ void drawStaticLayout() {
   tft.drawString("NK-L:",   COL_LABEL_1, ROW_DATA_1 + ROW_STEP * 5, 2);
   tft.drawString("NK-R:",   COL_LABEL_1, ROW_DATA_1 + ROW_STEP * 6, 2);
 
-  // Vertical dimmed line separating pot column from phrase area
+  // Vertical dimmed line separating pot column from middle area
   tft.drawFastVLine(170, ROW_DIVIDER, ROW_DIVIDER2 - ROW_DIVIDER, C_DIM);
 
-  // Right column - currently playing phrase label (yellow)
+  // Vertical dimmed line separating middle area from jukebox panel
+  tft.drawFastVLine(JB_LEFT - 5, ROW_DIVIDER, ROW_DIVIDER2 - ROW_DIVIDER, C_DIM);
+
+  // Middle column - currently playing phrase label (yellow)
   tft.setTextColor(C_ACCENT, C_BG);
   tft.drawString("PLAYING:", COL_LABEL_2, ROW_DATA_1, 2);
 
@@ -328,13 +433,26 @@ void drawValues(const disp_pkt_t &pkt) {
   tft.drawString(String(pkt.jaw),       COL_VALUE_1, ROW_DATA_1 + ROW_STEP * 6, 2);
 
   // --- Currently playing phrase (only redraw when it changes) ---
-  static char prev_phrase[32] = "";
-  if (strncmp(pkt.phrase, prev_phrase, sizeof(prev_phrase)) != 0) {
-    strncpy(prev_phrase, pkt.phrase, sizeof(prev_phrase));
+  if (strncmp(pkt.phrase, prevPhrase, sizeof(prevPhrase)) != 0) {
+    strncpy(prevPhrase, pkt.phrase, sizeof(prevPhrase));
     tft.setTextPadding(0);
-    tft.fillRect(COL_LABEL_2, ROW_DATA_1 + ROW_STEP, 280, ROW_STEP - 2, C_BG);
+    tft.fillRect(COL_LABEL_2, ROW_DATA_1 + ROW_STEP, JB_LEFT - COL_LABEL_2 - 10, ROW_STEP - 2, C_BG);
     tft.setTextColor(C_VALUE, C_BG);
     tft.drawString(String(pkt.phrase), COL_LABEL_2, ROW_DATA_1 + ROW_STEP, 2);
+
+    // Switch jukebox bank to match the playing track's prefix
+    if (jukeboxReceived && strlen(pkt.phrase) >= 1) {
+      char prefix = pkt.phrase[0];
+      uint8_t bank = 0;
+      if      (prefix == 'A' || prefix == 'a') bank = 1;
+      else if (prefix == 'B' || prefix == 'b') bank = 2;
+      else if (prefix == 'C' || prefix == 'c') bank = 3;
+      else if (prefix == 'D' || prefix == 'd') bank = 4;
+      if (bank != activeBank) {
+        activeBank = bank;
+        drawJukeboxPanel();
+      }
+    }
   }
 
   // --- Battery voltages (bottom row) ---
@@ -349,4 +467,84 @@ void drawValues(const disp_pkt_t &pkt) {
   tft.drawString(String(pkt.bat2_raw),   COL_VALUE_2, ROW_BAT, 2);
   tft.drawString(String(pkt.bat3_raw),   COL_VALUE_3, ROW_BAT, 2);
   tft.setTextPadding(0);
+}
+
+
+
+void loadFilelist(const filelist_pkt_t &pkt) {
+  memset(banks, 0, sizeof(banks));
+
+  for (uint8_t i = 0; i < pkt.total_files && i < MAX_FILES; i++) {
+    char id0 = pkt.files[i].id[0];
+    char id1 = pkt.files[i].id[1];
+
+    uint8_t bank  = 0;
+    uint8_t slot  = 0;
+    bool    valid = false;
+
+    if (id0 >= '0' && id0 <= '9' && id1 >= '0' && id1 <= '9') {
+      bank  = 0;
+      slot  = id1 - '0';
+      valid = true;
+    } else {
+      char uc = (id0 >= 'a' && id0 <= 'd') ? (id0 - 32) : id0;
+      if (uc >= 'A' && uc <= 'D' && id1 >= '0' && id1 <= '9') {
+        bank  = (uc - 'A') + 1;
+        slot  = id1 - '0';
+        valid = true;
+      }
+    }
+
+    if (valid && slot < FILES_PER_BANK) {
+      banks[bank][slot].valid = true;
+      memcpy(banks[bank][slot].id, pkt.files[i].id, FILE_ID_LEN);
+      banks[bank][slot].id[FILE_ID_LEN] = '\0';
+      strncpy(banks[bank][slot].name, pkt.files[i].name, FILE_NAME_MAX);
+      banks[bank][slot].name[FILE_NAME_MAX] = '\0';
+    }
+  }
+}
+
+
+void drawJukeboxPanel() {
+  tft.fillRect(JB_LEFT, ROW_DIVIDER + 1, 480 - JB_LEFT, ROW_DIVIDER2 - ROW_DIVIDER - 2, C_BG);
+  drawJukeboxTabs();
+  drawJukeboxList();
+}
+
+
+void drawJukeboxTabs() {
+  const char *labels[NUM_BANKS] = { "0-9", "A", "B", "C", "D" };
+
+  for (uint8_t b = 0; b < NUM_BANKS; b++) {
+    int16_t tx = JB_LEFT + b * (JB_TAB_W + 2);
+    bool    sel = (b == activeBank);
+
+    tft.fillRect(tx, JB_TAB_Y, JB_TAB_W, JB_TAB_H, sel ? C_OK : C_DIM);
+    tft.setTextColor(sel ? C_BG : C_VALUE, sel ? C_OK : C_DIM);
+    tft.drawString(labels[b], tx + 4, JB_TAB_Y + 3, 2);
+  }
+}
+
+
+void drawJukeboxList() {
+  for (uint8_t row = 0; row < FILES_PER_BANK; row++) {
+    int16_t y = JB_LIST_Y + row * JB_ROW_H;
+    const BankEntry &e = banks[activeBank][row];
+
+    // Clear the row
+    tft.fillRect(JB_LEFT, y, 480 - JB_LEFT, JB_ROW_H - 1, C_BG);
+
+    if (e.valid) {
+      // ID  (cyan, bold)
+      tft.setTextColor(C_LABEL, C_BG);
+      tft.drawString(String(e.id), JB_ID_X, y, 2);
+
+      // Name (white, truncated to available width)
+      tft.setTextColor(C_VALUE, C_BG);
+      tft.setTextPadding(480 - JB_NAME_X - 4);
+      tft.drawString(String(e.name), JB_NAME_X, y, 2);
+      tft.setTextPadding(0);
+    }
+  }
 }
