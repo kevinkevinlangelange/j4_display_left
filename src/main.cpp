@@ -4,6 +4,7 @@
 //     last updated:  2026-05-31 -- 1207 CDT
 //     last updated:  2026-06-02 -- 1100 CDT
 //     last updated:  2026-06-02 -- 1145 CDT
+//     last updated:  2026-06-10 -- CDT
 //           author:  Kevin Lange
 //      description:  Dedicated jukebox display for the Johnny 4 controller.
 //                    Receives file list and now-playing data from the TTGO
@@ -30,10 +31,13 @@
 //
 //      UART LINK PROTOCOL
 //      ------------------------------------------------------------------
-//      Two binary packet types share Serial1:
+//      Two binary packet types arrive on Serial1:
 //        0xAB 0xCD -- disp_pkt_t     (control data, 25 fps)
-//        0xBE 0xCD -- filelist_pkt_t (file list, sent once at boot)
+//        0xBE 0xCD -- filelist_pkt_t (file list, sent whenever it arrives
+//                                     from j4_receiver)
 //      Both end with an XOR checksum. Corrupted packets are silently dropped.
+//      Upstream: "LIST?\n" is sent every 2s until the file list arrives,
+//      so a display reboot recovers the list from the controller's cache.
 //      ------------------------------------------------------------------
 //
 //
@@ -168,6 +172,10 @@ char      prevPhrase[33]  = "";
 int8_t    playingBank     = -1;   // -1 = nothing playing
 int8_t    playingSlot     = -1;
 
+// Ask the controller for the file list until it shows up
+unsigned long listRequest_previousMillis = 0;
+const unsigned long listRequest_interval = 2000;
+
 
 // -----------------------------------------------------------------------------
 //  FUNCTION PROTOTYPES
@@ -212,13 +220,20 @@ void setup() {
 void loop() {
   int result = readSerial();
 
+  if (!jukeboxReceived && millis() - listRequest_previousMillis >= listRequest_interval) {
+    listRequest_previousMillis = millis();
+    Serial1.println("LIST?");
+  }
+
   if (result == SERIAL_FILELIST) {
     jukeboxReceived = true;
     drawBankTabs();
     drawFileList();
   }
 
-  if (result == SERIAL_CONTROL && strlen(rxPkt.phrase) > 0) {
+  // An empty phrase is meaningful too -- it clears the now-playing highlight
+  // when a track is stopped or finishes on its own
+  if (result == SERIAL_CONTROL) {
     if (strncmp(rxPkt.phrase, prevPhrase, sizeof(prevPhrase)) != 0) {
       strncpy(prevPhrase, rxPkt.phrase, sizeof(prevPhrase));
       handlePhraseChange(rxPkt.phrase);
