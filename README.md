@@ -9,6 +9,8 @@ Secondary display board for the Johnny 4 robot controller. Receives live control
 - Shows the currently selected audio phrase
 - Shows all three battery voltages
 - Shows ESP-NOW link health (LINKED / NO LINK) between the controller and robot receiver
+- Clears the now-playing highlight when a track stops or finishes (acts on empty-phrase packets too)
+- Requests the file list with `LIST?` every 2 seconds until it arrives, so a display reboot recovers the list from the controller's cache
 - Displays a "Waiting for controller..." message on startup until the first packet arrives
 
 ## Hardware
@@ -51,6 +53,23 @@ The backlight (D0/GPIO1) supports PWM dimming if you need to cut power draw.
 | D8 | GPIO7 | TFT SCLK |
 | D9 | GPIO8 | TFT MISO |
 | D10 | GPIO9 | TFT MOSI |
+
+## Pin diagram
+
+```
+                     XIAO ESP32S3  -  j4_display
+                  +--------------------------------------+
+   TTGO GPIO17 -->| D7 (GPIO44) UART RX                  |
+   TTGO GPIO27 <--| D6 (GPIO43) UART TX                  |
+                  |                                      |
+   BL  <----------| D0 (GPIO1)        D8 (GPIO7) ---> SCK   \
+   RST <----------| D1 (GPIO2)        D9 (GPIO8) ---> MISO   } ILI9488
+   DC  <----------| D2 (GPIO3)        D10(GPIO9) ---> MOSI   } 480x320 TFT
+   CS  <----------| D3 (GPIO4)                             /
+                  | D4 (GPIO5) free   D5 (GPIO6) free    |
+                  |              3V3   GND   USB-C        |
+                  +--------------------------------------+
+```
 
 ## Wiring to TTGO controller
 
