@@ -5,6 +5,8 @@
 //     last updated:  2026-06-02 -- 1100 CDT
 //     last updated:  2026-06-02 -- 1145 CDT
 //     last updated:  2026-06-10 -- CDT
+//     last updated:  2026-06-17 -- CDT (added "PING" heartbeat so the controller's
+//                    connection-status screen can show j4_display as connected)
 //           author:  Kevin Lange
 //      description:  Dedicated jukebox display for the Johnny 4 controller.
 //                    Receives file list and now-playing data from the TTGO
@@ -219,6 +221,14 @@ void setup() {
 // -----------------------------------------------------------------------------
 void loop() {
   int result = readSerial();
+
+  // Heartbeat so the controller can show "j4_display: CONNECTED" on its status
+  // screen even after the file list has been received (LIST? stops once we have it).
+  static unsigned long heartbeat_previousMillis = 0;
+  if (millis() - heartbeat_previousMillis >= 1000) {
+    heartbeat_previousMillis = millis();
+    Serial1.println("PING");
+  }
 
   if (!jukeboxReceived && millis() - listRequest_previousMillis >= listRequest_interval) {
     listRequest_previousMillis = millis();

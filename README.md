@@ -12,6 +12,7 @@ Secondary display board for the Johnny 4 robot controller. Receives live control
 - Clears the now-playing highlight when a track stops or finishes (acts on empty-phrase packets too)
 - Requests the file list with `LIST?` every 2 seconds until it arrives, so a display reboot recovers the list from the controller's cache
 - Displays a "Waiting for controller..." message on startup until the first packet arrives
+- Sends a `PING` heartbeat once per second so the controller's connection-status screen can show j4_display as connected
 
 ## Hardware
 
