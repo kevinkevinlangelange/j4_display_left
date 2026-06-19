@@ -57,20 +57,23 @@ The backlight (D0/GPIO1) supports PWM dimming if you need to cut power draw.
 
 ## Pin diagram
 
+Physical layout, component side up, USB-C on the LEFT (matches your photo).
+The two pin rows read left-to-right starting next to the USB connector.
+
 ```
-                     XIAO ESP32S3  -  j4_display
-                  +--------------------------------------+
-   TTGO GPIO17 -->| D7 (GPIO44) UART RX                  |
-   TTGO GPIO27 <--| D6 (GPIO43) UART TX                  |
-                  |                                      |
-   BL  <----------| D0 (GPIO1)        D8 (GPIO7) ---> SCK   \
-   RST <----------| D1 (GPIO2)        D9 (GPIO8) ---> MISO   } ILI9488
-   DC  <----------| D2 (GPIO3)        D10(GPIO9) ---> MOSI   } 480x320 TFT
-   CS  <----------| D3 (GPIO4)                             /
-                  | D4 (GPIO5) free   D5 (GPIO6) free    |
-                  |              3V3   GND   USB-C        |
-                  +--------------------------------------+
+              D0    D1    D2    D3    D4    D5    D6      <- top row
+             (GP1) (GP2) (GP3) (GP4) (GP5) (GP6) (GP43)
+              BL    RST   DC    CS    --    --    LINK TX -> TTGO 27
+          +-------------------------------------------------+
+   USB-C =|                   XIAO ESP32-S3                 |
+          +-------------------------------------------------+
+              5V    GND   3V3   D10   D9    D8    D7        <- bottom row
+                               (GP9) (GP8) (GP7) (GP44)
+                                MOSI  MISO  SCK   LINK RX <- TTGO 17
 ```
+
+The ILI9488 TFT uses BL/RST/DC/CS (D0-D3) plus SCK/MISO/MOSI (D8/D9/D10);
+D6/D7 are the UART link to the TTGO; D4/D5 are free.
 
 ## Wiring to TTGO controller
 
