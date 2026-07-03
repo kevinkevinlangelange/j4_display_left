@@ -1,6 +1,6 @@
-# j4_display
+# j4_display_left
 
-Secondary display board for the Johnny 4 robot controller. Receives live control data from the main TTGO T-Display controller board over a wired UART link and renders a status dashboard on a 3.5" colour TFT.
+Jukebox display board for the Johnny 4 robot controller -- the portrait display on the LEFT of the panel (renamed from j4_display when [j4_display_right](https://github.com/kevinkevinlangelange/j4_display_right) joined the controller). Receives live control data from the main TTGO T-Display controller board over a wired UART link and renders the jukebox UI on a 3.5" colour TFT.
 
 ## What this board does
 
@@ -57,19 +57,20 @@ The backlight (D0/GPIO1) supports PWM dimming if you need to cut power draw.
 
 ## Pin diagram
 
-Physical layout, component side up, USB-C on the LEFT (matches your photo).
-The two pin rows read left-to-right starting next to the USB connector.
+Physical layout, component side up, USB-C at the TOP. The two header rails
+read top-to-bottom as shown.
 
 ```
-              D0    D1    D2    D3    D4    D5    D6      <- top row
-             (GP1) (GP2) (GP3) (GP4) (GP5) (GP6) (GP43)
-              BL    RST   DC    CS    --    --    LINK TX -> TTGO 27
-          +-------------------------------------------------+
-   USB-C =|                   XIAO ESP32-S3                 |
-          +-------------------------------------------------+
-              5V    GND   3V3   D10   D9    D8    D7        <- bottom row
-                               (GP9) (GP8) (GP7) (GP44)
-                                MOSI  MISO  SCK   LINK RX <- TTGO 17
+            LEFT rail                              RIGHT rail
+                            +--[ USB-C ]--+
+     TFT BL  -- D0 (GP1) |  |             |  | 5V           (unused)
+     TFT RST -- D1 (GP2) |  |    XIAO     |  | GND          ground
+     TFT DC  -- D2 (GP3) |  |   ESP32-S3  |  | 3V3          TFT VCC
+     TFT CS  -- D3 (GP4) |  |             |  | D10 (GP9)    TFT MOSI
+      (free) -- D4 (GP5) |  |             |  | D9  (GP8)    TFT MISO
+      (free) -- D5 (GP6) |  |             |  | D8  (GP7)    TFT SCLK
+LINK TX -> TTGO 27 -- D6 |  |             |  | D7  (GP44)   LINK RX <- TTGO 17
+              (GP43)        +-------------+
 ```
 
 The ILI9488 TFT uses BL/RST/DC/CS (D0-D3) plus SCK/MISO/MOSI (D8/D9/D10);
@@ -150,3 +151,4 @@ If the upload fails, hold the **BOOT** button on the XIAO, tap **RESET**, then r
 ## Related projects
 
 - **[j4_controller](https://github.com/kevinkevinlangelange/j4_controller)** -- the TTGO T-Display transmitter that sends data to this board
+- **[j4_display_right](https://github.com/kevinkevinlangelange/j4_display_right)** -- the landscape display + pot-label board on the right of the panel

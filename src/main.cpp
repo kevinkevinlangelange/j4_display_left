@@ -1,5 +1,5 @@
 //******************************************************************************
-//       file name:  j4_display
+//       file name:  j4_display_left
 //     v0_1 created:  2026-05-22
 //     last updated:  2026-05-31 -- 1207 CDT
 //     last updated:  2026-06-02 -- 1100 CDT
@@ -7,14 +7,18 @@
 //     last updated:  2026-06-10 -- CDT
 //     last updated:  2026-06-17 -- CDT (added "PING" heartbeat so the controller's
 //                    connection-status screen can show j4_display as connected)
+//     last updated:  2026-07-02 -- CDT (renamed j4_display -> j4_display_left; a
+//                    second XIAO display board, j4_display_right, joined the
+//                    controller. This board's code is unchanged.)
 //           author:  Kevin Lange
-//      description:  Dedicated jukebox display for the Johnny 4 controller.
-//                    Receives file list and now-playing data from the TTGO
-//                    j4_controller over UART and renders a jukebox selection
-//                    UI on a 3.5" ILI9488 320x480 SPI TFT display.
+//      description:  Dedicated jukebox display for the Johnny 4 controller (the
+//                    portrait display on the LEFT of the panel). Receives file
+//                    list and now-playing data from the TTGO j4_controller over
+//                    UART and renders a jukebox selection UI on a 3.5" ILI9488
+//                    320x480 SPI TFT display.
 //
 //
-//      J4_DISPLAY - SeeedStudio XIAO ESP32S3 Pin Connections
+//      J4_DISPLAY_LEFT - SeeedStudio XIAO ESP32S3 Pin Connections
 //      ------------------------------------------------------------------
 //      D0 / GPIO1   TFT backlight (HIGH = on)
 //      D1 / GPIO2   TFT RST
